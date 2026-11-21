@@ -200,7 +200,7 @@
           "size": {
             "px": 320
           },
-          "min": 52,
+          "min": 260,
           "max": 600,
           "background": "chrome",
           "radius": 10,
@@ -211,7 +211,7 @@
           "content": {
             "mod": "selan-reactor",
             "props": {
-              "collapse": "reactor"
+              "hide": "reactor"
             }
           }
         }

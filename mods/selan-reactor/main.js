@@ -1,14 +1,14 @@
 // Selan Reactor questions waiting on you: a panel, the Dock badge, and a toast for each new one.
 // Opened as a dialog with props { question } it shows that one question whole, with an answer field.
 // Commands: selan-reactor.refresh reads again; selan-reactor.open opens the newest question.
-// With props { collapse: "<block id>" } from a layout, that block folds to a strip with the mark
-// while no question waits, and opens again to its width when one comes or a read fails.
+// With props { hide: "<block id>" } from a layout, that block is hidden while no question waits,
+// and shown again when one comes or a read fails.
 // The questions come from the Selan CLI (`selan reactor questions --json`, `selan reactor answer`),
 // which holds the person's sign-in; this mod never sees a token.
 
 import { View, div, image } from "gpui-kit";
 import { v_flex, h_flex, TextareaState, Textarea } from "gpui-base";
-import { exec, theme, settings, props, run, layout, openOverlay, closeOverlay, notify, playSound, setBadge, checking, nextCommand } from "herdr";
+import { exec, theme, settings, props, run, openOverlay, closeOverlay, notify, playSound, setBadge, checking, nextCommand } from "herdr";
 
 const PERIOD_MS = 60_000;
 const ANSWER_CHARS = 2000;
@@ -16,9 +16,6 @@ const ANSWER_CHARS = 2000;
 const GAP = 16;
 // Reactor's mark: the blue Selan tile, as selan-reactor's Brand.tsx draws it.
 const LOGO = "mods/selan-reactor/reactor.svg";
-// The folded panel: the mark's 24 px with the brand row's 14 px either side.
-const FOLDED_PX = 52;
-const OPEN_PX = 320;
 
 /** The Selan CLI, run as the person: one JSON object out, never a throw. */
 class Selan {
@@ -91,36 +88,21 @@ class Announcer {
   }
 }
 
-/** The layout block the panel folds, when a layout names one: a strip while nothing waits. */
-class Fold {
+/** The layout block the panel lives in, when a layout names one: hidden while nothing waits. */
+class Hide {
   constructor(block) {
     this.block = block;
     this.applied = null;
   }
 
-  node() {
-    const find = (n) => (n?.id === this.block ? n : (n?.children ?? []).map(find).find(Boolean) ?? null);
-    return find(layout());
-  }
-
-  folded() {
-    return Boolean(this.block) && (this.node()?.size?.px ?? OPEN_PX) <= FOLDED_PX;
-  }
-
-  /** Folds when the read found nothing waiting, opens when it found questions or failed.
-   *  Only on a change, so a width the person drags stays until the next one. */
+  /** Hides when the read found nothing waiting, shows when it found questions or failed.
+   *  Only on a change, so a panel the person shows or hides stays until the next one. */
   follow(state) {
     if (!this.block || state.kind === "loading") return;
-    const want = state.kind === "loaded" && state.questions.length === 0 ? "folded" : "open";
+    const want = state.kind === "loaded" && state.questions.length === 0 ? "hidden" : "shown";
     if (want === this.applied) return;
     this.applied = want;
-    const px = this.node()?.size?.px;
-    if (want === "folded") {
-      if (px && px > FOLDED_PX) localStorage.setItem("width", String(px));
-      run("layout.resize", { id: this.block, px: FOLDED_PX });
-    } else {
-      run("layout.resize", { id: this.block, px: Number(localStorage.getItem("width")) || OPEN_PX });
-    }
+    run(want === "hidden" ? "layout.hide" : "layout.show", { id: this.block });
   }
 }
 
@@ -205,19 +187,6 @@ class AnswerDialog {
 
 /** The panel: newest first, each row its question and one muted line under it. */
 class QuestionList {
-  /** Folded: the mark alone, where the brand row has it. */
-  static folded(t) {
-    return v_flex()
-      .size_full()
-      .bg(t.chrome)
-      .items_center()
-      .child(
-        h_flex().id("rq-folded").h(52).flex_none().items_center()
-          .tooltip("No questions waiting")
-          .child(image(LOGO).w(24).h(24).rounded(7).flex_none()),
-      );
-  }
-
   static render(t, state) {
     const body =
       state.kind === "loading"
@@ -301,7 +270,7 @@ export default class Reactor extends View {
       return;
     }
     this.feed = new Feed();
-    this.fold = new Fold(p.collapse ?? null);
+    this.hide = new Hide(p.hide ?? null);
     if (checking()) return;
     this.refresh(cx);
     cx.timer.every(PERIOD_MS, (cx) => this.refresh(cx));
@@ -321,21 +290,13 @@ export default class Reactor extends View {
     cx.spawn(async (cx) => {
       await this.feed.load();
       Announcer.tell(this.feed);
-      this.fold.follow(this.feed.state);
+      this.hide.follow(this.feed.state);
       cx.notify();
     });
   }
 
   render(_cx) {
     const t = theme();
-    if (this.dialog) return this.dialog.render(t);
-    const view = this.fold.folded() ? QuestionList.folded(t) : QuestionList.render(t, this.feed.state);
-    // A fold or an opening lands after the render that asked for it: draw again at the new width.
-    return view.on_size_change((size, cx) => {
-      const width = Math.round(size.width);
-      if (width === this.width) return;
-      this.width = width;
-      cx.notify();
-    });
+    return this.dialog ? this.dialog.render(t) : QuestionList.render(t, this.feed.state);
   }
 }

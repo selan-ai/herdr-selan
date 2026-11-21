@@ -2,7 +2,7 @@
 
 A Herdr layout for working with many coding agents and Selan Reactor: each space lists its agents under it in
 the sidebar, in place of a tab bar, and the questions your Reactor agents are waiting on sit in a panel on the
-right that folds to its mark while none wait. The look is JetBrains' Islands Dark (WebStorm, IntelliJ): the
+right that shows only while one waits. The look is JetBrains' Islands Dark (WebStorm, IntelliJ): the
 sidebar, the terminals and the Reactor panel are rounded islands on a grey frame, with Inter for the interface.
 
 ![Selan](preview.png)
@@ -25,7 +25,7 @@ sidebar, the terminals and the Reactor panel are rounded islands on a grey frame
   `background` `#191a1c`. The focused pane has a 1 px `accent` `#3871e1` border.
 - **The Reactor island**, 320 px, the same island look: the Selan mark, "Selan" over "REACTOR", then
   "Waiting questions" and the questions newest first, each with `agent · workspace · age` under it. While none
-  wait it is a 52 px strip with the mark alone.
+  wait it is hidden and the terminal island takes its place.
 - **The status bar**, on the frame's color with no line: the machine, the branch, how many agents and how many
   need you, and the command palette's key at the right.
 - **Colors**: Islands Dark from JetBrains' own theme and editor scheme. Terminal text `#bcbec4`, selection
@@ -47,7 +47,7 @@ sidebar, the terminals and the Reactor panel are rounded islands on a grey frame
 - **Pressing a space row** shows it; dragging it reorders spaces, with an accent line where it lands.
 - **The Reactor panel** reads the questions every 60 s through the Selan CLI, puts their count on the Dock
   badge and raises a toast for each new one. Pressing a question opens a dialog to answer it. With no question
-  waiting it folds to its strip; a new question or a failed read opens it again to the width it had.
+  waiting its island is hidden; a new question or a failed read shows it again.
 - A narrow sidebar (under 160 px, the toggle's rail) shows spaces as numbers with a status dot.
 
 ## Built from
@@ -56,14 +56,14 @@ sidebar, the terminals and the Reactor panel are rounded islands on a grey frame
   `traffic_lights: [20, 24]`) holding a `body` row (padding 8, gap 8) and the `status` block. The row holds
   the `sidebar` column (`brand` block, `spaces` block, `sidebar-footer` block), the `work` column (the `main`
   tab block and the shipped hidden Files/Changes `panel`), and the `reactor` block (padding `[10, 0]` so the
-  mod's square edges sit inside the island's corners, `min: 52`).
+  mod's square edges sit inside the island's corners).
 - `mods/selan-spaces`: a changed copy of Herdr's `spaces` mod. It reads `spaces()`, `panes()` and `terminals()`
   once per render and draws each space's tabs and sub-agents under it.
 - `mods/selan-chrome`: Herdr's `workspace-chrome` with its top row's top corners and its footer's bottom corners
   rounded to 10 px, and Inter in `fonts/`.
 - `mods/selan-status`: Herdr's `workspace-status` on `canvas` with no top line.
 - `mods/selan-reactor`: a copy of [selan-ai/herdr-reactor](https://github.com/selan-ai/herdr-reactor)'s mod,
-  given props `{ "collapse": "reactor" }`. It runs the Selan CLI (`selan reactor questions --json`,
+  given props `{ "hide": "reactor" }`. It runs the Selan CLI (`selan reactor questions --json`,
   `selan reactor answer`), which holds the sign-in; the mod never sees a token.
 - The shipped `pane` (pane headers), `new-menu`, `menu`, `files` and `changes` mods.
 
@@ -71,8 +71,7 @@ sidebar, the terminals and the Reactor panel are rounded islands on a grey frame
 
 - Mods paint their own background over a layout node's rounded corners: the sidebar's rows round their own
   corners, and the Reactor block keeps its mod inside by vertical padding.
-- A fold or an opening of the Reactor panel lands after the render that asked for it; the mod draws again from
-  its root's `on_size_change`.
+- The Reactor mod keeps reading while its block is hidden, which is what shows it again.
 - The Reactor panel needs the Selan CLI on `PATH`, signed in (`selan login`).
 - The three `selan-*` copies of shipped mods don't follow Herdr's updates to `spaces`, `workspace-chrome` and
   `workspace-status`; `cloned_from` in each `mod.json` names the version they came from.
@@ -81,4 +80,4 @@ sidebar, the terminals and the Reactor panel are rounded islands on a grey frame
 
 - `herdr-app check` passes for each of the four mods and `layout.switch {"name":"selan"}` shows three islands.
 - Each space lists its tabs with their agents' status, and pressing one shows it.
-- With questions waiting the Reactor island lists them; with none it is a strip with the mark.
+- With questions waiting the Reactor island lists them; with none it is hidden.

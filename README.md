@@ -2,7 +2,7 @@
 
 A [Herdr](https://herdr.dev) layout for working with many coding agents and
 [Selan Reactor](https://selan.ai): each space lists its agents under it in the sidebar, and the questions your
-Reactor agents are waiting on sit in a panel on the right that folds away while none wait. It looks like
+Reactor agents are waiting on sit in a panel on the right that shows only while one waits. It looks like
 JetBrains' Islands Dark: rounded islands on a grey frame, Inter for the interface.
 
 ![Selan](preview.png)
