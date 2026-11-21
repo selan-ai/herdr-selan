@@ -1,0 +1,231 @@
+{
+  "id": "root",
+  "type": "column",
+  "theme": "graphite",
+  "colors": {
+    "background": "#191a1c",
+    "foreground": "#d1d3d9",
+    "selection": "#214283",
+    "cursor": "#ced0d6",
+    "ansi0": "#000000",
+    "ansi1": "#f0524f",
+    "ansi2": "#5c962c",
+    "ansi3": "#a68a0d",
+    "ansi4": "#3993d4",
+    "ansi5": "#a771bf",
+    "ansi6": "#00a3a3",
+    "ansi7": "#808080",
+    "ansi8": "#595959",
+    "ansi9": "#ff4050",
+    "ansi10": "#4fc414",
+    "ansi11": "#e5bf00",
+    "ansi12": "#1fb0ff",
+    "ansi13": "#ed7eed",
+    "ansi14": "#00e5e5",
+    "ansi15": "#ffffff",
+    "surface": "#191a1c",
+    "canvas": "#26282c",
+    "chrome": "#191a1c",
+    "popover": "#2b2d30",
+    "raised": "#33353b",
+    "hover": "#2e2f31",
+    "selected": "#2a4371",
+    "border": "#26282c",
+    "input": "#40434a",
+    "muted": "#9fa2a8",
+    "dim": "#73767c",
+    "accent": "#3871e1",
+    "accent_foreground": "#ffffff",
+    "solid": "#3871e1",
+    "solid_foreground": "#ffffff",
+    "working": "#d59637",
+    "blocked": "#f57e84",
+    "done": "#6db083",
+    "idle": "#73767c",
+    "unknown": "#73767c"
+  },
+  "preview": "layouts/selan.png",
+  "background": "canvas",
+  "titlebar": "none",
+  "traffic_lights": [
+    20,
+    24
+  ],
+  "terminal_padding": [
+    14,
+    12
+  ],
+  "ui_font": "Inter",
+  "children": [
+    {
+      "id": "body",
+      "type": "row",
+      "padding": 8,
+      "gap": 8,
+      "children": [
+        {
+          "id": "sidebar",
+          "type": "column",
+          "children": [
+            {
+              "id": "brand",
+              "type": "block",
+              "content": {
+                "mod": "selan-chrome"
+              },
+              "size": {
+                "px": 46
+              },
+              "window_drag": true
+            },
+            {
+              "id": "sidebar-lists",
+              "type": "column",
+              "children": [
+                {
+                  "id": "spaces",
+                  "type": "block",
+                  "content": {
+                    "mod": "selan-spaces"
+                  },
+                  "size": {
+                    "weight": 1
+                  },
+                  "min": 90
+                }
+              ]
+            },
+            {
+              "id": "sidebar-footer",
+              "type": "block",
+              "content": {
+                "mod": "selan-chrome",
+                "props": {
+                  "footer": true
+                }
+              },
+              "size": {
+                "px": 69
+              }
+            }
+          ],
+          "size": {
+            "px": 268
+          },
+          "min": 44,
+          "max": 480,
+          "background": "chrome",
+          "resizable": false,
+          "radius": 10
+        },
+        {
+          "id": "work",
+          "type": "column",
+          "resizable": false,
+          "children": [
+            {
+              "id": "work-body",
+              "type": "row",
+              "children": [
+                {
+                  "id": "main",
+                  "type": "block",
+                  "content": {
+                    "tab": "active",
+                    "pane": {
+                      "header": {
+                        "content": {
+                          "mod": "pane"
+                        },
+                        "reveal": "always",
+                        "height": 30,
+                        "position": "top"
+                      },
+                      "background": "background",
+                      "border": {
+                        "width": 1,
+                        "color": "border"
+                      },
+                      "focus": {
+                        "width": 1,
+                        "color": "accent"
+                      },
+                      "radius": 10,
+                      "gap": 8,
+                      "lone": true
+                    }
+                  }
+                },
+                {
+                  "id": "panel",
+                  "type": "column",
+                  "children": [
+                    {
+                      "id": "panel-body",
+                      "type": "stack",
+                      "children": [
+                        {
+                          "id": "files",
+                          "type": "block",
+                          "content": {
+                            "mod": "files"
+                          }
+                        },
+                        {
+                          "id": "changes",
+                          "type": "block",
+                          "content": {
+                            "mod": "changes"
+                          }
+                        }
+                      ],
+                      "active": "files"
+                    }
+                  ],
+                  "size": {
+                    "px": 368
+                  },
+                  "min": 280,
+                  "max": 900,
+                  "hidden": true
+                }
+              ],
+              "gap": 8
+            }
+          ]
+        },
+        {
+          "id": "reactor",
+          "type": "block",
+          "size": {
+            "px": 320
+          },
+          "min": 52,
+          "max": 600,
+          "background": "chrome",
+          "radius": 10,
+          "padding": [
+            10,
+            0
+          ],
+          "content": {
+            "mod": "selan-reactor",
+            "props": {
+              "collapse": "reactor"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "status",
+      "type": "block",
+      "size": {
+        "px": 28
+      },
+      "content": {
+        "mod": "selan-status"
+      }
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+layouts/selan.json
+layouts/selan.png
+mods/selan-spaces
+mods/selan-chrome
+mods/selan-status
+mods/selan-reactor

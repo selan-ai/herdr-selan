@@ -1,0 +1,14 @@
+<!-- Reactor's mark: the blue Selan tile, as selan-reactor's Brand.tsx draws it. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" fill="none" role="img" aria-label="Selan Reactor">
+  <defs>
+    <mask id="selan-cut" maskUnits="userSpaceOnUse" x="-8" y="-8" width="80" height="80">
+      <rect x="-8" y="-8" width="80" height="80" fill="#fff"/>
+      <rect x="16" y="17.5" width="28" height="17" rx="8.5" transform="rotate(-30 30 26)" fill="none" stroke="#000" stroke-width="12.4"/>
+    </mask>
+  </defs>
+  <rect width="512" height="512" rx="119.8" fill="#0B6CFF"/>
+  <g transform="translate(256 256) scale(6.6608) translate(-32 -32)">
+    <g mask="url(#selan-cut)"><rect x="20" y="29.5" width="28" height="17" rx="8.5" transform="rotate(-30 34 38)" fill="none" stroke="#FFFFFF" stroke-width="5.4"/></g>
+    <rect x="16" y="17.5" width="28" height="17" rx="8.5" transform="rotate(-30 30 26)" fill="none" stroke="#FFFFFF" stroke-width="5.4"/>
+  </g>
+</svg>
