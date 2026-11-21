@@ -19,8 +19,9 @@ or, from a clone of this repo:
 ./install.sh
 ```
 
-It copies the layout and its four mods into `~/.config/herdr-app` (or `$HERDR_APP_HOME`), checks each mod and
-switches to the layout. Herdr must be running. The Reactor panel needs the Selan CLI, signed in:
+It copies the layout and its five mods into `~/.config/herdr-app` (or `$HERDR_APP_HOME`), checks each mod and
+switches to the layout. Herdr must be running. The Reactor panel and the + menu's agents (Claude Code and
+Codex, started with `seland`) need the Selan CLI, signed in:
 
 ```sh
 selan login
@@ -41,7 +42,7 @@ window.
 
 ## What's in it
 
-`RECIPE.md` describes the layout in full. The `selan-spaces`, `selan-chrome` and `selan-status` mods are changed
-copies of Herdr's own (Apache-2.0, `LICENSE`); `selan-reactor` is a copy of
+`RECIPE.md` describes the layout in full. The `selan-spaces`, `selan-chrome`, `selan-status` and `selan-new-menu`
+mods are changed copies of Herdr's own (Apache-2.0, `LICENSE`); `selan-reactor` is a copy of
 [selan-ai/herdr-reactor](https://github.com/selan-ai/herdr-reactor) (MIT, its `LICENSE`). Inter is under the SIL
 Open Font License (`mods/selan-chrome/fonts/LICENSE-Inter.txt`).

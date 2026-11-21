@@ -627,7 +627,7 @@ export default class Spaces extends View {
             .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
             .on_click(() => {
               if (!w.active) run("space.select", { id: w.id });
-              openOverlay({ mod: "new-menu", kind: "popup", width: 250, height: 512 });
+              openOverlay({ mod: "selan-new-menu", kind: "popup", width: 250, height: 512 });
             })
             .child(svg("mods/workspace-chrome/plus.svg").size(12))))
           // Fold the space to its one row, or open it again: shown on hover, and always while folded.

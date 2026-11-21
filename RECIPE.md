@@ -41,8 +41,10 @@ sidebar, the terminals and the Reactor panel are rounded islands on a grey frame
   agent's.
 - **Pressing a tab row** shows that space and tab. Double-press renames the tab; right-press opens its menu
   (Rename, New tab, Close). Sub-agent rows focus the agent's pane, or peek at it when it has none.
-- **Hovering a space row** shows a + (a new terminal or agent in that space, the shipped `new-menu`) and a
-  chevron that folds the space to its one row. Folded, the row shows how many tabs it has and their most urgent
+- **Hovering a space row** shows a + and a chevron. The + opens the new menu for that space: Terminal, then
+  under "Start with Selan" Claude Code (`seland`) and Codex (`seland codex`), both with permission checks off
+  and keys 1 and 2, then New space and the worktree items. An agent that isn't installed shows "not installed".
+  The chevron folds the space to its one row. Folded, the row shows how many tabs it has and their most urgent
   status, and stays selected when it is the shown space. Folds are kept across restarts.
 - **Pressing a space row** shows it; dragging it reorders spaces, with an accent line where it lands.
 - **The Reactor panel** reads the questions every 60 s through the Selan CLI, puts their count on the Dock
@@ -62,22 +64,26 @@ sidebar, the terminals and the Reactor panel are rounded islands on a grey frame
 - `mods/selan-chrome`: Herdr's `workspace-chrome` with its top row's top corners and its footer's bottom corners
   rounded to 10 px, and Inter in `fonts/`.
 - `mods/selan-status`: Herdr's `workspace-status` on `canvas` with no top line.
+- `mods/selan-new-menu`: Herdr's `new-menu` with its agents fixed to Claude Code and Codex, started as
+  `seland` and `seland codex --no-daemon` (Herdr's own Codex launch adds `--no-daemon`).
 - `mods/selan-reactor`: a copy of [selan-ai/herdr-reactor](https://github.com/selan-ai/herdr-reactor)'s mod,
   given props `{ "hide": "reactor" }`. It runs the Selan CLI (`selan reactor questions --json`,
   `selan reactor answer`), which holds the sign-in; the mod never sees a token.
-- The shipped `pane` (pane headers), `new-menu`, `menu`, `files` and `changes` mods.
+- The shipped `pane` (pane headers), `menu`, `files` and `changes` mods.
 
 ## Watch out
 
 - Mods paint their own background over a layout node's rounded corners: the sidebar's rows round their own
   corners, and the Reactor block keeps its mod inside by vertical padding.
 - The Reactor mod keeps reading while its block is hidden, which is what shows it again.
-- The Reactor panel needs the Selan CLI on `PATH`, signed in (`selan login`).
-- The three `selan-*` copies of shipped mods don't follow Herdr's updates to `spaces`, `workspace-chrome` and
-  `workspace-status`; `cloned_from` in each `mod.json` names the version they came from.
+- The Reactor panel and the menu's agents need the Selan CLI on `PATH`, signed in (`selan login`); Codex also
+  needs the Codex CLI (`brew install --cask codex`).
+- The four `selan-*` copies of shipped mods don't follow Herdr's updates to `spaces`, `workspace-chrome`,
+  `workspace-status` and `new-menu`; `cloned_from` in each `mod.json` names the version they came from.
 
 ## Done when
 
-- `herdr-app check` passes for each of the four mods and `layout.switch {"name":"selan"}` shows three islands.
+- `herdr-app check` passes for each of the five mods and `layout.switch {"name":"selan"}` shows three islands.
 - Each space lists its tabs with their agents' status, and pressing one shows it.
 - With questions waiting the Reactor island lists them; with none it is hidden.
+- A space's + offers Terminal, Claude Code and Codex, and each agent starts through `seland`.

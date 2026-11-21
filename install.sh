@@ -9,7 +9,7 @@ while read -r f; do
   mkdir -p "$(dirname "$HOME_DIR/$f")"
   cp -R "./$f" "$HOME_DIR/$f"
 done < files.txt
-for m in selan-spaces selan-chrome selan-status selan-reactor; do
+for m in selan-spaces selan-chrome selan-status selan-reactor selan-new-menu; do
   herdr-app check "$HOME_DIR/mods/$m"
 done
 herdr-app do layout.switch '{"name":"selan"}'
