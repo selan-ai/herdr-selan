@@ -20,12 +20,13 @@ or, from a clone of this repo:
 ```
 
 It copies the layout and its five mods into `~/.config/herdr-app` (or `$HERDR_APP_HOME`), checks each mod and
-switches to the layout. Herdr must be running. The Reactor panel and the + menu's agents (Claude Code and
-Codex, started with `seland`) need the Selan CLI, signed in:
+switches to the layout. Herdr must be running. The Reactor panel, the status bar's Reactor counts (selan 1.33 or
+later) and the + menu's agents (Claude Code and Codex, started with `seland`) need the Selan CLI, signed in:
 
 ```sh
 selan login
 selan reactor questions   # should list your waiting questions
+selan reactor runs        # should list the runs going and the ones that went wrong
 ```
 
 `ctrl-shift-l` switches back to your previous layout.

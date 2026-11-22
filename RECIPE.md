@@ -28,7 +28,10 @@ sidebar, the terminals and the Reactor panel are rounded islands on a grey frame
   "Waiting questions" and the questions newest first, each with `agent · workspace · age` under it. While none
   wait it is hidden and the terminal island takes its place.
 - **The status bar**, on the frame's color with no line: the machine, the branch, how many agents and how many
-  need you, and the command palette's key at the right.
+  need you, then at the right Reactor's mark and "Reactor", "N running" after a `working` spinner while runs go,
+  "N errors" in `blocked` and "N warnings" in muted after a small `working` dot for the runs of the last 24 h
+  that went wrong or ended with a warning (each part only when there is some, a dim "·" between them), and the
+  command palette's key.
 - **Colors**: Islands Dark from JetBrains' own theme and editor scheme. Terminal text `#bcbec4`, selection
   `#214283`, cursor `#ced0d6`; interface text `#d1d3d9`, muted `#9fa2a8`, dim `#73767c`; borders `#393b40`,
   which also edge every overlay; hover `#35373c`, raised `#393b40`; status colors working `#d59637`, blocked
@@ -51,6 +54,12 @@ sidebar, the terminals and the Reactor panel are rounded islands on a grey frame
 - **The Reactor panel** reads the questions every 60 s through the Selan CLI, puts their count on the Dock
   badge and raises a toast for each new one. Pressing a question opens a dialog to answer it. With no question
   waiting its island is hidden; a new question or a failed read shows it again.
+- **The Reactor counts** in the status bar are read every 60 s through the Selan CLI (`selan reactor runs
+  --json`). Pressing a count opens a popup just above the bar listing those runs, newest first and at most 10:
+  the agent, `state · age`, and for an error or a warning the agent's own line. Pressing a row opens that run's
+  page in Reactor in the browser and closes the popup. One popup at a time: pressing the same count again, Esc
+  or a click outside closes it, and another count replaces it. A failed read leaves "Reactor" dim, with why on
+  hover.
 - A narrow sidebar (under 160 px, the toggle's rail) shows spaces as numbers with a status dot.
 
 ## Built from
@@ -64,7 +73,9 @@ sidebar, the terminals and the Reactor panel are rounded islands on a grey frame
   once per render and draws each space's tabs and sub-agents under it.
 - `mods/selan-chrome`: Herdr's `workspace-chrome` with its top row's top corners and its footer's bottom corners
   rounded to 10 px, and Inter in `fonts/`.
-- `mods/selan-status`: Herdr's `workspace-status` on `canvas` with no top line.
+- `mods/selan-status`: Herdr's `workspace-status` on `canvas` with no top line, plus the Reactor counts from
+  `selan reactor runs --json` and their popup (the same mod, opened with props `{ list, runs }`; the open one is
+  in shared `selan-status.popup`).
 - `mods/selan-new-menu`: Herdr's `new-menu` with its agents fixed to Claude Code and Codex, started as
   `seland` and `seland codex --no-daemon` (Herdr's own Codex launch adds `--no-daemon`).
 - `mods/selan-reactor`: a copy of [selan-ai/herdr-reactor](https://github.com/selan-ai/herdr-reactor)'s mod,
@@ -78,7 +89,10 @@ sidebar, the terminals and the Reactor panel are rounded islands on a grey frame
   corners, and the Reactor block keeps its mod inside by vertical padding.
 - The Reactor mod keeps reading while its block is hidden, which is what shows it again.
 - The Reactor panel and the menu's agents need the Selan CLI on `PATH`, signed in (`selan login`); Codex also
-  needs the Codex CLI (`brew install --cask codex`).
+  needs the Codex CLI (`brew install --cask codex`). The status bar's Reactor counts need selan 1.33 or later
+  (`selan update`); an older one leaves "Reactor" dim and says so on hover. Rows that open their run in Reactor
+  need selan 1.33.1 or later, and the warnings count a selan that lists warnings; an older one shows plain rows
+  and no warnings.
 - The four `selan-*` copies of shipped mods don't follow Herdr's updates to `spaces`, `workspace-chrome`,
   `workspace-status` and `new-menu`; `cloned_from` in each `mod.json` names the version they came from.
 
@@ -87,4 +101,6 @@ sidebar, the terminals and the Reactor panel are rounded islands on a grey frame
 - `herdr-app check` passes for each of the five mods and `layout.switch {"name":"selan"}` shows three islands.
 - Each space lists its tabs with their agents' status, and pressing one shows it.
 - With questions waiting the Reactor island lists them; with none it is hidden.
+- The status bar shows Reactor's running, error and warning counts; pressing one lists those runs, and
+  pressing a row opens its run in Reactor.
 - A space's + offers Terminal, Claude Code and Codex, and each agent starts through `seland`.
