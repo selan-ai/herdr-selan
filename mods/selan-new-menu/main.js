@@ -51,7 +51,7 @@ export default class NewMenu extends View {
   row(id, icon, name, action, hint = "", enabled = true) {
     const t = theme();
     return h_flex().id(id).h(31).px(9).gap(10).rounded(7).items_center().flex_none()
-      .text_color(enabled ? t.foreground : t.dim).when(enabled, el => el.hover(s => s.bg(t.selected)))
+      .text_color(enabled ? t.foreground : t.dim).when(enabled, el => el.hover(s => s.bg(t.hover)))
       .on_click(() => { if (enabled) { closeOverlay(props().overlay); action(); } })
       .child(icon).child(div().flex_1().child(name)).child(div().text_size(11).text_color(t.dim).child(hint));
   }
@@ -72,15 +72,15 @@ export default class NewMenu extends View {
         closeOverlay(props().overlay);
         run("tab.new", { name: agent.name, space: space?.id, argv: agent.run });
       })
-      .child(this.row("terminal", svg("icons/shell.svg").size(14), "Terminal", () => run("tab.new", { space: space?.id }), shortcut("tab.new")))
+      .child(this.row("terminal", svg("icons/shell.svg").size(14).flex_none().text_color(t.muted), "Terminal", () => run("tab.new", { space: space?.id }), shortcut("tab.new")))
       .child(div().h(25).flex_none().px(9).pt(8).text_size(11).text_color(t.dim).child("Start with Selan"))
       .child(v_flex().flex_none()
-        .children(choices.map(a => this.row(a.key, a.tint ? svg(a.icon).size(14).text_color(t.foreground) : image(a.icon).size(14), a.name,
+        .children(choices.map(a => this.row(a.key, a.tint ? svg(a.icon).size(14).flex_none().text_color(t.muted) : image(a.icon).w(14).h(14).flex_none(), a.name,
           () => run("tab.new", { name: a.name, space: space?.id, argv: a.run }), a.installed ? String(installed.indexOf(a) + 1) : "not installed", a.installed)))
         .when(note, el => el.child(h_flex().h(31).px(9).items_center().text_color(t.dim).child(this.failed ? "Could not check installed agents" : "Checking installed agents…"))))
       .child(div().h(1).mx(4).my(5).bg(t.border))
-      .child(this.row("space", div().w(14).child("+"), "New space", () => run("space.new"), shortcut("space.new")))
-      .child(this.row("worktree", svg("mods/workspace-chrome/branch.svg").size(14), "New worktree…", () => openOverlay({ mod: "worktree", kind: "dialog", width: 460, height: 280, props: { space: space?.id, folder: panes().find(p => p.focused)?.cwd, action: "new" } }), "", Boolean(space)))
-      .child(this.row("worktree-open", svg("mods/workspace-chrome/branch.svg").size(14), "Open worktree\u2026", () => openOverlay({ mod: "worktree", kind: "dialog", width: 560, height: 480, props: { space: space?.id, folder: panes().find(p => p.focused)?.cwd, action: "open" } }), "", Boolean(space)));
+      .child(this.row("space", svg("mods/workspace-chrome/plus.svg").size(14).flex_none().text_color(t.muted), "New space", () => run("space.new"), shortcut("space.new")))
+      .child(this.row("worktree", svg("mods/workspace-chrome/branch.svg").size(14).flex_none().text_color(t.muted), "New worktree…", () => openOverlay({ mod: "worktree", kind: "dialog", width: 460, height: 280, props: { space: space?.id, folder: panes().find(p => p.focused)?.cwd, action: "new" } }), "", Boolean(space)))
+      .child(this.row("worktree-open", svg("mods/workspace-chrome/branch.svg").size(14).flex_none().text_color(t.muted), "Open worktree\u2026", () => openOverlay({ mod: "worktree", kind: "dialog", width: 560, height: 480, props: { space: space?.id, folder: panes().find(p => p.focused)?.cwd, action: "open" } }), "", Boolean(space)));
   }
 }

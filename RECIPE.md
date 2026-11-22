@@ -30,9 +30,9 @@ sidebar, the terminals and the Reactor panel are rounded islands on a grey frame
 - **The status bar**, on the frame's color with no line: the machine, the branch, how many agents and how many
   need you, and the command palette's key at the right.
 - **Colors**: Islands Dark from JetBrains' own theme and editor scheme. Terminal text `#bcbec4`, selection
-  `#214283`, cursor `#ced0d6`; interface text `#d1d3d9`, muted `#9fa2a8`, dim `#73767c`; borders `#26282c`;
-  status colors working `#d59637`, blocked `#f57e84`, done `#6db083`, idle `#73767c`. ANSI colors are the
-  scheme's console colors.
+  `#214283`, cursor `#ced0d6`; interface text `#d1d3d9`, muted `#9fa2a8`, dim `#73767c`; borders `#393b40`,
+  which also edge every overlay; hover `#35373c`, raised `#393b40`; status colors working `#d59637`, blocked
+  `#f57e84`, done `#6db083`, idle `#73767c`. ANSI colors are the scheme's console colors.
 - **Type**: Inter (shipped in `mods/selan-chrome/fonts/`) for the interface, JetBrains Mono in terminals.
 
 ## How it behaves

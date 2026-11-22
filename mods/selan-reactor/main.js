@@ -110,10 +110,17 @@ class Hide {
 class AnswerDialog {
   constructor(question, overlay) {
     this.q = question;
+    this.long = AnswerDialog.long(question);
     this.overlay = overlay;
     this.state = { kind: "editing" };
     this.input = TextareaState.new({ placeholder: "Your answer", rows: 4 });
     this.input.focus();
+  }
+
+  /** Details too long for the dialog to grow around them: about eight lines at its width. */
+  static long(q) {
+    const details = q.details ?? "";
+    return details.length > 560 || details.split("\n").length > 8;
   }
 
   send(cx) {
@@ -167,7 +174,10 @@ class AnswerDialog {
           .child(div().text_size(11).text_color(t.dim).child("Esc")),
       )
       .child(div().font_medium().text_color(t.foreground).child(this.q.question))
-      .child(div().flex_1().min_h(0).overflow_y_scrollbar().text_color(t.muted).child(this.q.details))
+      // Short details: the dialog is as tall as what it holds. Long ones scroll in a dialog of fixed height.
+      .child(this.long
+        ? div().flex_1().min_h(0).overflow_y_scrollbar().text_color(t.muted).child(this.q.details)
+        : div().text_color(t.muted).child(this.q.details))
       .child(
         Textarea.new(this.input).px(10).py(8).rounded(9).border_1().border_color(t.input)
           .bg(t.background).text_size(12.8).text_color(t.foreground),
@@ -254,7 +264,7 @@ class QuestionList {
   }
 
   static open(q) {
-    openOverlay({ mod: "selan-reactor", kind: "dialog", width: 560, height: 520, props: { question: q } });
+    openOverlay({ mod: "selan-reactor", kind: "dialog", width: 560, ...(AnswerDialog.long(q) ? { height: 520 } : {}), props: { question: q } });
   }
 
   static note(t, text) {
