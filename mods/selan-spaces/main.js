@@ -1,7 +1,7 @@
 // Workspace spaces with their tabs (agents) listed under each one, in place of a tab bar:
 // stable colored avatars, worktrees under their checkout, grouped by machine when more
-// than one is known. After a space's name, the repo its first terminal is in now, only
-// where unusual: branch, ahead/behind. Under it, one row per tab: its agent's icon, its
+// than one is known. After a space's name, only what is unusual about the repo its first
+// terminal is in now: its branch, ahead/behind. Under it, one row per tab: its agent's icon, its
 // live title and status, and the tab's sub-agents under it. Click a space or a tab to
 // show it, right-click for its menu, drag a space to reorder.
 
@@ -450,27 +450,25 @@ export default class Spaces extends View {
     });
   }
 
-  // Only what's unusual, after the name: "herdr \u00b7 spike \u21912 \u21931". The repo or
-  // branch goes when the name already says it (a worktree is named after its branch),
-  // and master/main go: nearly every space is on one. When the row is full, it
-  // and the name both start from their text's width and give way in proportion.
-  gitTail(g, tree, name, t) {
+  // Only what's unusual, after the name: "spike \u21912 \u21931", all dim: none of it needs you.
+  // The repo goes (the space's name says which one it is), so do master/main and a branch
+  // the name already says (a worktree is named after its branch). The name keeps its width;
+  // the branch gets what is left and gives way first.
+  gitTail(g, name, t) {
+    const key = (a) => a.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
     const raw = g.branch ?? "detached";
-    const same = (a) => a.toLowerCase() === name.toLowerCase();
-    const branch = same(raw) || raw === "master" || raw === "main" ? "" : raw;
-    const repo = tree || same(g.name) ? "" : g.name;
-    const where = [repo, branch].filter(Boolean).join(" \u00b7 ");
+    const branch = key(raw) === key(name) || raw === "master" || raw === "main" ? "" : raw;
     return h_flex()
-      .flex_auto()
-      .min_w(where ? SIDE_MIN : 0)
+      .flex_1()
+      .when(Boolean(branch), (el) => el.min_w(SIDE_MIN))
       .gap(5)
       .justify_end()
       .items_center()
       .text_size(11.5)
       .text_color(t.dim)
-      .when(Boolean(where), (el) => el.child(div().min_w(0).truncate().child(where)))
-      .when(g.ahead > 0, (el) => el.child(div().flex_none().text_color(t.ansi2).child(`\u2191${g.ahead}`)))
-      .when(g.behind > 0, (el) => el.child(div().flex_none().text_color(t.ansi1).child(`\u2193${g.behind}`)));
+      .when(Boolean(branch), (el) => el.child(div().min_w(0).truncate().child(branch)))
+      .when(g.ahead > 0, (el) => el.child(div().flex_none().child(`\u2191${g.ahead}`)))
+      .when(g.behind > 0, (el) => el.child(div().flex_none().child(`\u2193${g.behind}`)));
   }
 
   // Working: a spinner; needs you: a pill; done: a dot; idle: a ring.
@@ -563,6 +561,7 @@ export default class Spaces extends View {
     const colors = shared("space.colors") ?? {};
     const color = colors[w.id] ?? "ansi6";
     const fill = color.startsWith("#") ? color : (MARK[color] ?? t[color]);
+    const badge = w.status === "idle" ? null : this.status(t, w.status);
     // The space and its tabs are one group: it drags, and shows where a dragged space lands, as one.
     return v_flex()
       .relative()
@@ -613,15 +612,16 @@ export default class Spaces extends View {
           .when(Boolean(tree), el => el.pl(22).child(svg("mods/workspace-chrome/branch.svg").size(13).flex_none().text_color(t.dim)))
           .when(!tree, el => el.child(h_flex().size(18).flex_none().rounded(5).bg(fill).items_center().justify_center().text_size(10.5).font_bold().text_color("#ffffff").child([...w.name][0]?.toUpperCase() ?? "?")))
           .child(div().flex_initial().min_w(SIDE_MIN).truncate().text_color(t.foreground).when(w.active, el => el.font_medium()).child(w.name))
-          .child(g ? this.gitTail(g, tree, w.name, t) : div().flex_1())
+          .child(g ? this.gitTail(g, w.name, t) : div().flex_1())
           .on_hover((on, cx) => {
             if (on) this.hoverSpace = w.id;
             else if (this.hoverSpace === w.id) this.hoverSpace = null;
             cx.notify();
           })
-          // On hover, a new tab in this space: the menu that starts a terminal or an agent.
+          // Folded: how many tabs, and their most urgent status unless all are idle.
           .when(folded, el => el.child(div().flex_none().text_size(11).text_color(t.dim).child(String(w.tabs?.length ?? 0)))
-            .child(this.status(t, w.status) ?? div()))
+            .when(Boolean(badge), el => el.child(badge)))
+          // On hover, a new tab in this space: the menu that starts a terminal or an agent.
           .when(hovered, el => el.child(div().id(`space-tab-new-${w.id}`).size(22).flex_none().flex().items_center().justify_center().rounded(6)
             .text_color(t.dim).hover(s => s.bg(t.raised).text_color(t.foreground))
             .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
