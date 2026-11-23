@@ -404,10 +404,12 @@ export default class Spaces extends View {
       const rebuilt = this.rebuilt(machine) || !!repair;
       const login = machine?.state === "needs_login" ? `hc machine login ${m}` : null;
       const folded = this.folded.has(m);
-      const icon = svg(`mods/workspace-chrome/${m ? "server" : "monitor"}.svg`).size(13).flex_none();
+      // The machine stands out from its spaces: its mark and name bright, every group but the first set apart.
+      const icon = svg(`mods/workspace-chrome/${m ? "server" : "monitor"}.svg`).size(14).flex_none().text_color(t.foreground);
       const badge = div().absolute().right(-3).bottom(-2).size(6).rounded(3).border_1().border_color(t.chrome).bg(connected ? t.ansi2 : t.dim);
       // A space from this computer, carried over this machine's header or its spaces, moves here when let go.
-      const head = h_flex().id(`machine-${m ?? "local"}`).h(26).flex_none().px(collapsed ? 0 : 8).gap(7).items_center().text_size(11).text_color(t.dim)
+      const head = h_flex().id(`machine-${m ?? "local"}`).h(30).flex_none().px(collapsed ? 0 : 8).gap(8).items_center().text_size(12).text_color(t.muted)
+        .when(Boolean(m) && !collapsed, el => el.mt(10))
         .when(this.drop !== null && this.drop === m, el => el.rounded(6).bg(t.selected).text_color(t.foreground))
         .on_mouse_move((_e, cx) => this.carry(null, m, cx))
         .on_mouse_up("left", (_e, cx) => this.letGo(null, m, cx))
@@ -424,7 +426,7 @@ export default class Spaces extends View {
           .on_click((_e, cx) => { cx.stop_propagation(); openOverlay({ mod: "machine-add", kind: "dialog", width: 560 }); }).child("⚠")))
         .when(!collapsed, el => el.child(icon))
         .when(collapsed, el => el.child(div().relative().flex_none().child(icon).when(Boolean(m), el => el.child(badge))))
-        .when(!collapsed, el => el.child(div().flex_1().truncate().child(m ?? "This computer"))
+        .when(!collapsed, el => el.child(div().flex_1().truncate().font_semibold().text_color(t.foreground).child(m ?? "This computer"))
           .when(!connected && !rebuilt && !login, el => el.child(div().flex_none().child((machine?.state ?? "asleep").replace(/_/g, " "))))
           .when(rebuilt, el => el.child(h_flex().flex_none().gap(3).items_center()
             .child(div().max_w(140).truncate().child(repair?.error || "rebuilt ·"))

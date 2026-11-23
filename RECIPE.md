@@ -20,7 +20,9 @@ sidebar, the terminals and the Reactor panel are rounded islands on a grey frame
     space's name keeps its width and the branch truncates first. Under it, one 28 px row per tab: the agent's icon at 14 px, aligned under
     the space's name, the agent's live title at 12.5 px, and its status at the right. The shown tab is
     `selected` `#2a4371`. A tab's sub-agents follow it, indented 22 px per level, at 12 px. 4 px under each
-    space's group.
+    space's group. With another machine added, the spaces are grouped under a 30 px header per machine: its
+    mark (a monitor for this computer, a server for the others) at 14 px and its name at 12 px semibold, both
+    in `foreground`, the rest of the row `muted`; 10 px above every header but the first.
   - A footer with Settings and Add machine, a `border` line above it, bottom corners rounded.
 - **The terminal island**: the shown tab's panes as cards, 10 px corners, a 30 px header (icon, program, folder),
   `background` `#191a1c`. The focused pane has a 1 px `accent` `#3871e1` border.
