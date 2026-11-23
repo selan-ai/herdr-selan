@@ -111,7 +111,9 @@ export default class Spaces extends View {
     this.born = {};
     this.pressed = null;
     this.over = null;
-    this.drop = null; // the machine a pressed space would be moved to, when let go on its header
+    this.drop = null; // the machine a pressed space would be moved to, when let go over its group
+    this.dragging = false; // a pressed space has been moved: the sidebar shows it is being carried
+    this.pressedTab = null; // the chat (tab) pressed, when it is a chat that is carried rather than its space
     this.teleport = false; // whether the mod that moves it is installed
     this.scroll = ScrollHandle.new(); // the list's position: the active space is brought into view through it
     this.activeAt = -1; // the active space's place among the list's children (headers and rows), -1 when not drawn
@@ -404,25 +406,13 @@ export default class Spaces extends View {
       const folded = this.folded.has(m);
       const icon = svg(`mods/workspace-chrome/${m ? "server" : "monitor"}.svg`).size(13).flex_none();
       const badge = div().absolute().right(-3).bottom(-2).size(6).rounded(3).border_1().border_color(t.chrome).bg(connected ? t.ansi2 : t.dim);
-      // A space from this computer, pressed and brought here, moves to this machine when let go.
-      const droppable = this.teleport && Boolean(m) && connected && !machine?.via;
+      // A space from this computer, carried over this machine's header or its spaces, moves here when let go.
       const head = h_flex().id(`machine-${m ?? "local"}`).h(26).flex_none().px(collapsed ? 0 : 8).gap(7).items_center().text_size(11).text_color(t.dim)
         .when(this.drop !== null && this.drop === m, el => el.rounded(6).bg(t.selected).text_color(t.foreground))
-        .on_mouse_move((_e, cx) => {
-          const source = spaces().find(s => s.id === this.pressed);
-          const drop = droppable && source && !source.machine ? m : null;
-          if (this.drop !== drop || this.over !== null) { this.drop = drop; this.over = null; cx.notify(); }
-        })
-        .on_mouse_up("left", (_e, cx) => {
-          if (this.drop !== null && this.drop === m && this.pressed !== null) {
-            openOverlay({ mod: TELEPORT, kind: "dialog", width: 440, height: 190, props: { space: this.pressed, machine: m } });
-          }
-          this.pressed = null;
-          this.drop = null;
-          cx.notify();
-        })
+        .on_mouse_move((_e, cx) => this.carry(null, m, cx))
+        .on_mouse_up("left", (_e, cx) => this.letGo(null, m, cx))
         .when(collapsed, el => el.mt(4).w(RAIL_CELL).justify_center().rounded(6).tooltip(login ? `${m} needs a login: run ${login}. Click for Copy.` : m ? `${m} · ${connected ? "connected" : (machine?.state ?? "asleep").replace(/_/g, " ")}` : "This computer"))
-        .cursor_pointer().hover(s => s.bg(t.hover))
+        .when(!this.dragging, el => el.cursor_pointer()).hover(s => s.bg(t.hover))
         .on_click((_e, cx) => {
           if (collapsed && login) { run("app.settings", { section: "machines" }); return; }
           folded ? this.folded.delete(m) : this.folded.add(m);
@@ -527,8 +517,14 @@ export default class Spaces extends View {
       .text_size(12.5)
       .when(shown, (el) => el.bg(t.selected))
       .when(!shown, (el) => el.hover((s) => s.bg(t.hover)))
-      // A tab isn't dragged like its space: the press stays here.
-      .on_mouse_down("left", (e, cx) => { cx.stop_propagation(); if (e.click_count === 2) run("tab.rename", { id: c.id }); })
+      .when(this.dragging && this.pressedTab === c.id, (el) => el.opacity(0.5))
+      // A chat is carried on its own: never among its space's neighbours, only onto another machine.
+      .on_mouse_down("left", (e, cx) => {
+        cx.stop_propagation();
+        if (e.click_count === 2) { run("tab.rename", { id: c.id }); return; }
+        this.pressed = w.id;
+        this.pressedTab = c.id;
+      })
       .on_click(() => {
         if (!w.active) run("space.select", { id: w.id });
         run("tab.select", { id: c.id });
@@ -569,6 +565,50 @@ export default class Spaces extends View {
     });
   }
 
+  // Whether the space being carried may be let go on machine m: one from this computer, onto another
+  // machine that is connected over ssh, with the teleport mod installed to move it.
+  droppable(m) {
+    const source = spaces().find(s => s.id === this.pressed);
+    const machine = this.machines.find(k => k.name === m);
+    return this.teleport && Boolean(m) && Boolean(source) && !source.machine && machine?.state === "connected" && !machine.via;
+  }
+
+  // The pointer moved over a space row (w) or a machine's header (w null) of machine m while a space is
+  // pressed: among its own machine's spaces it shows where it would land; over another machine's group,
+  // that machine lights up when the space can move there.
+  carry(w, m, cx) {
+    if (this.pressed === null) return;
+    const source = spaces().find(s => s.id === this.pressed);
+    const over = w && source && this.pressedTab === null && (source.machine ?? null) === m ? w.id : null;
+    const drop = (source?.machine ?? null) !== m && this.droppable(m) ? m : null;
+    if (this.over !== over || this.drop !== drop || !this.dragging) {
+      this.over = over;
+      this.drop = drop;
+      this.dragging = true;
+      cx.notify();
+    }
+  }
+
+  // Letting go over a space row (w) or a machine's header (w null) of machine m: a move to that machine,
+  // a new place among its own machine's spaces, or a press that shows the space.
+  letGo(w, m, cx) {
+    const { pressed: from, pressedTab: tab, over, drop } = this;
+    this.pressed = null;
+    this.pressedTab = null;
+    this.over = null;
+    this.drop = null;
+    this.dragging = false;
+    if (from !== null && drop !== null && drop === m) {
+      openOverlay({ mod: TELEPORT, kind: "dialog", width: 440, height: 190, props: { space: from, ...(tab ? { tab } : {}), machine: m } });
+    } else if (tab !== null) {
+      // A chat let go anywhere else: its press was a click, which the chat's own row answers.
+    } else if (w && from !== null && over === w.id && from !== w.id) {
+      const index = spaces().findIndex(s => s.id === w.id);
+      if (index !== -1) run("space.move", { id: from, index: index + 1 });
+    } else if (w && from === w.id) run("space.select", { id: w.id });
+    cx.notify();
+  }
+
   fold(id, cx) {
     this.foldedSpaces.has(id) ? this.foldedSpaces.delete(id) : this.foldedSpaces.add(id);
     const ids = new Set(spaces().map((s) => s.id));
@@ -590,7 +630,7 @@ export default class Spaces extends View {
       .id(`space-${w.id}`)
       .flex_none()
       .pb(4)
-      .when(this.pressed === w.id && this.over !== w.id, (el) => el.opacity(0.5))
+      .when(this.pressed === w.id && this.pressedTab === null && this.over !== w.id, (el) => el.opacity(0.5))
       .when(this.pressed !== null && this.over === w.id && this.pressed !== w.id, (el) => el.child(
         div().absolute().left(0).right(0).h(2).bg(t.accent)
           .when(fromIndex < i, line => line.bottom(0))
@@ -600,26 +640,8 @@ export default class Spaces extends View {
         this.pressed = w.id;
         this.over = w.id;
       })
-      .on_mouse_move((_e, cx) => {
-        const source = spaces().find(s => s.id === this.pressed);
-        const over = source && (source.machine ?? null) === (w.machine ?? null) ? w.id : null;
-        if (this.pressed !== null && (this.over !== over || this.drop !== null)) {
-          this.over = over;
-          this.drop = null;
-          cx.notify();
-        }
-      })
-      .on_mouse_up("left", (_e, cx) => {
-        const from = this.pressed;
-        const over = this.over;
-        this.pressed = null;
-        this.over = null;
-        if (from !== null && over === w.id && from !== w.id) {
-          const index = spaces().findIndex(s => s.id === w.id);
-          if (index !== -1) run("space.move", { id: from, index: index + 1 });
-        } else if (from === w.id) run("space.select", { id: w.id });
-        cx.notify();
-      })
+      .on_mouse_move((_e, cx) => this.carry(w, w.machine ?? null, cx))
+      .on_mouse_up("left", (_e, cx) => this.letGo(w, w.machine ?? null, cx))
       .child(
         h_flex()
           .id(`space-head-${w.id}`)
@@ -714,7 +736,9 @@ export default class Spaces extends View {
       .child(v_flex().flex_1().min_h(0).px(collapsed ? 0 : 8).pb(14).overflow_y_scrollbar().mode("always").track_scroll(this.scroll)
         // A block above (another mod's) growing, or the window resizing, shrinks this list and can push the active space out.
         .on_size_change((_size, cx) => { if (this.activeAt >= 0) { this.scroll.scroll_to_item(this.activeAt); cx.notify(); } })
-        .on_mouse_up("left", (_e, cx) => { this.pressed = null; this.drop = null; cx.notify(); })
+        // Carrying a space: the pointer says so over the whole list.
+        .when(this.dragging, el => el.cursor_grabbing())
+        .on_mouse_up("left", (_e, cx) => { this.pressed = null; this.pressedTab = null; this.drop = null; this.dragging = false; cx.notify(); })
         .children(list));
   }
 }
