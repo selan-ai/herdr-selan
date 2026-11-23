@@ -153,7 +153,7 @@ export default class Spaces extends View {
   init(_props, cx) {
     const p = props() ?? {};
     if (p.chatMenu) {
-      this.menu = p;
+      this.chatMenu = p;
       return;
     }
     this.git = {}; // where() -> { name, branch, ahead, behind, repo, linked }, null: not a repo
@@ -777,7 +777,7 @@ export default class Spaces extends View {
 
   render() {
     const t = theme();
-    if (this.menu) return ChatMenu.render(t, this.menu.chatMenu, this.menu.overlay);
+    if (this.chatMenu) return ChatMenu.render(t, this.chatMenu.chatMenu, this.chatMenu.overlay);
     const collapsed = narrow();
     const palette = ["ansi6", "ansi3", "ansi4", "ansi5", "ansi2", "ansi1"];
     const sp = spaces();
