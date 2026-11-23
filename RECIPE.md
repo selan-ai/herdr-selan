@@ -47,7 +47,7 @@ sidebar, the terminals and the Reactor panel are rounded islands on a grey frame
   agent's.
 - **A chat's color**: right-pressing a tab row opens its own menu at the pointer (228 wide): a row of
   swatches (none, the six avatar colors teal, orange, blue, violet, green, pink, and muted), a line, then
-  Rename, New tab, Close. A color is a 3 px bar left of the chat's icon; muted dims the row's icon and title to
+  Rename, New tab, Close. A color is a 3 px bar left of the chat's icon, and the icon (a one-color glyph) in that color; muted dims the row's icon and title to
   `dim`, for a chat to leave be. Picking one closes the menu. Colors are shared between the sidebar and its menu
   (`shared("chats.colors")`) and kept by tab id across restarts.
 - **Pressing a tab row** shows that space and tab. Double-press renames the tab; right-press opens its menu

@@ -574,7 +574,9 @@ export default class Spaces extends View {
     const color = chatColors()[c.id];
     const muted = color === "muted";
     const text = muted ? t.dim : shown ? t.foreground : t.muted;
-    const pic = programIcon(lead?.program, 14, text);
+    const tint = color && !muted ? MARK[color] ?? t[color] : null;
+    // A colored chat's icon takes its color too (a one-color glyph; a picture stays as it is).
+    const pic = programIcon(lead?.program, 14, tint ?? text);
     const stop = (_e, cx) => cx.stop_propagation();
     return h_flex()
       .id(`tab-${c.id}`)
@@ -603,7 +605,7 @@ export default class Spaces extends View {
       })
       .on_mouse_down("right", (_e, cx) => { cx.stop_propagation(); ChatMenu.open(c.id, w.id); })
       // The color: a bar left of the icon.
-      .when(Boolean(color) && !muted, (el) => el.child(div().absolute().left(TAB_INSET - 10).top(7).w(3).h(14).rounded(2).bg(MARK[color] ?? t[color])))
+      .when(Boolean(tint), (el) => el.child(div().absolute().left(TAB_INSET - 10).top(7).w(3).h(14).rounded(2).bg(tint)))
       .child(pic ?? div().size(14).flex_none())
       .child(div().flex_1().min_w(0).truncate().text_color(text).child(c.zoomed ? `${tabLabel(c, lead)} Z` : tabLabel(c, lead)))
       .child(this.status(t, c.status) ?? div());
