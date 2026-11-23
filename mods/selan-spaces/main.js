@@ -90,7 +90,7 @@ const MARK = { ansi6: "#22a99a", ansi3: "#e3814f", ansi4: "#5b8def", ansi5: "#8b
 // or muted, which dims the whole row for a chat to leave be. Kept by tab id, in this order in the menu.
 const CHAT_COLORS = ["ansi6", "ansi3", "ansi4", "ansi5", "ansi2", "ansi1", "muted"];
 const CHAT_KEY = "chats.colors";
-const MENU = { width: 228, swatches: 40, item: 28, pad: 4 };
+const MENU = { width: 248, pad: 6, label: 24, swatches: 36, line: 11, item: 30 };
 const MENU_ITEMS = ["Rename", "New tab", "Close"];
 
 // Every chat's color, as the sidebar and its menu share it.
@@ -111,7 +111,7 @@ function setChatColor(id, color) {
 // A chat's right-press menu, opened as a popup at the pointer: its colors, then Rename, New tab, Close.
 class ChatMenu {
   static open(tab, space) {
-    const height = MENU.pad * 2 + MENU.swatches + 9 + MENU_ITEMS.length * MENU.item;
+    const height = MENU.pad * 2 + MENU.label + MENU.swatches + MENU.line + MENU_ITEMS.length * MENU.item;
     openOverlay({ mod: "selan-spaces", kind: "popup", width: MENU.width, height, props: { chatMenu: { tab, space } } });
   }
 
@@ -134,8 +134,9 @@ class ChatMenu {
       "Close": () => run("tab.close", { id: tab }),
     };
     return v_flex().size_full().p(MENU.pad).bg(t.popover ?? t.chrome).text_size(12.5)
-      .child(h_flex().h(MENU.swatches).flex_none().px(6).gap(6).items_center().children([null, ...CHAT_COLORS].map(swatch)))
-      .child(div().h(1).mx(2).my(4).flex_none().bg(t.border))
+      .child(h_flex().h(MENU.label).flex_none().px(10).items_end().text_size(11).font_medium().text_color(t.dim).child("Chat color"))
+      .child(h_flex().h(MENU.swatches).flex_none().px(10).gap(8).items_center().children([null, ...CHAT_COLORS].map(swatch)))
+      .child(div().h(1).mx(4).my(5).flex_none().bg(t.border))
       .children(MENU_ITEMS.map((label) => item(label, actions[label])));
   }
 }
@@ -575,8 +576,9 @@ export default class Spaces extends View {
     const muted = color === "muted";
     const text = muted ? t.dim : shown ? t.foreground : t.muted;
     const tint = color && !muted ? MARK[color] ?? t[color] : null;
-    // A colored chat's icon takes its color too (a one-color glyph; a picture stays as it is).
-    const pic = programIcon(lead?.program, 14, tint ?? text);
+    // A colored chat's icon takes its color too: a picture drawn as an SVG becomes its one-color shape.
+    const icon = lead?.program?.icon;
+    const pic = tint && icon && /\.svg$/i.test(icon) ? svg(icon).size(14).flex_none().text_color(tint) : programIcon(lead?.program, 14, text);
     const stop = (_e, cx) => cx.stop_propagation();
     return h_flex()
       .id(`tab-${c.id}`)
