@@ -7,7 +7,7 @@
 
 import { View, div, svg, image } from "gpui-kit";
 import { v_flex, h_flex, ScrollHandle } from "gpui-base";
-import { spaces, machines, panes, terminals, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout } from "herdr";
+import { spaces, machines, panes, terminals, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout, home } from "herdr";
 
 // Same as the tabs and agents mods: drops a status glyph, keeps a leading bracket or quote.
 const clean = (s) => (s ?? "").replace(/^[^\p{L}\p{N}\p{Ps}\p{Pi}]+/u, "").replace(/^\[ [!.] \] /, "").trim();
@@ -45,6 +45,9 @@ function find(node, id) {
   }
   return null;
 }
+
+// The mod a space dropped on another machine opens, when it is installed: it moves the space there.
+const TELEPORT = "selan-teleport";
 
 // The sidebar's rail goes by its width, not a flag: dragging its edge narrows it too.
 const narrow = () => (find(layout(), "sidebar")?.size?.px ?? Infinity) < 160;
@@ -108,6 +111,8 @@ export default class Spaces extends View {
     this.born = {};
     this.pressed = null;
     this.over = null;
+    this.drop = null; // the machine a pressed space would be moved to, when let go on its header
+    this.teleport = false; // whether the mod that moves it is installed
     this.scroll = ScrollHandle.new(); // the list's position: the active space is brought into view through it
     this.activeAt = -1; // the active space's place among the list's children (headers and rows), -1 when not drawn
     this.machines = [];
@@ -187,6 +192,7 @@ export default class Spaces extends View {
   refreshMachines(cx) {
     cx.spawn(async cx => {
       try { const r = await hc(["machine", "ls", "--json"]); if (r.code === 0) this.machines = (JSON.parse(r.stdout).machines ?? []).filter((m) => !m.temporary); } catch {}
+      try { this.teleport = (await exec("test", ["-f", `${home()}/mods/${TELEPORT}/main.js`])).code === 0; } catch { this.teleport = false; }
       cx.notify();
     });
   }
@@ -398,7 +404,23 @@ export default class Spaces extends View {
       const folded = this.folded.has(m);
       const icon = svg(`mods/workspace-chrome/${m ? "server" : "monitor"}.svg`).size(13).flex_none();
       const badge = div().absolute().right(-3).bottom(-2).size(6).rounded(3).border_1().border_color(t.chrome).bg(connected ? t.ansi2 : t.dim);
+      // A space from this computer, pressed and brought here, moves to this machine when let go.
+      const droppable = this.teleport && Boolean(m) && connected && !machine?.via;
       const head = h_flex().id(`machine-${m ?? "local"}`).h(26).flex_none().px(collapsed ? 0 : 8).gap(7).items_center().text_size(11).text_color(t.dim)
+        .when(this.drop !== null && this.drop === m, el => el.rounded(6).bg(t.selected).text_color(t.foreground))
+        .on_mouse_move((_e, cx) => {
+          const source = spaces().find(s => s.id === this.pressed);
+          const drop = droppable && source && !source.machine ? m : null;
+          if (this.drop !== drop || this.over !== null) { this.drop = drop; this.over = null; cx.notify(); }
+        })
+        .on_mouse_up("left", (_e, cx) => {
+          if (this.drop !== null && this.drop === m && this.pressed !== null) {
+            openOverlay({ mod: TELEPORT, kind: "dialog", width: 440, height: 190, props: { space: this.pressed, machine: m } });
+          }
+          this.pressed = null;
+          this.drop = null;
+          cx.notify();
+        })
         .when(collapsed, el => el.mt(4).w(RAIL_CELL).justify_center().rounded(6).tooltip(login ? `${m} needs a login: run ${login}. Click for Copy.` : m ? `${m} · ${connected ? "connected" : (machine?.state ?? "asleep").replace(/_/g, " ")}` : "This computer"))
         .cursor_pointer().hover(s => s.bg(t.hover))
         .on_click((_e, cx) => {
@@ -581,8 +603,9 @@ export default class Spaces extends View {
       .on_mouse_move((_e, cx) => {
         const source = spaces().find(s => s.id === this.pressed);
         const over = source && (source.machine ?? null) === (w.machine ?? null) ? w.id : null;
-        if (this.pressed !== null && this.over !== over) {
+        if (this.pressed !== null && (this.over !== over || this.drop !== null)) {
           this.over = over;
+          this.drop = null;
           cx.notify();
         }
       })
@@ -691,7 +714,7 @@ export default class Spaces extends View {
       .child(v_flex().flex_1().min_h(0).px(collapsed ? 0 : 8).pb(14).overflow_y_scrollbar().mode("always").track_scroll(this.scroll)
         // A block above (another mod's) growing, or the window resizing, shrinks this list and can push the active space out.
         .on_size_change((_size, cx) => { if (this.activeAt >= 0) { this.scroll.scroll_to_item(this.activeAt); cx.notify(); } })
-        .on_mouse_up("left", (_e, cx) => { this.pressed = null; cx.notify(); })
+        .on_mouse_up("left", (_e, cx) => { this.pressed = null; this.drop = null; cx.notify(); })
         .children(list));
   }
 }

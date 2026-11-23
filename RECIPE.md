@@ -51,6 +51,11 @@ sidebar, the terminals and the Reactor panel are rounded islands on a grey frame
   The chevron folds the space to its one row. Folded, the row shows how many tabs it has and their most urgent
   status unless all are idle, and stays selected when it is the shown space. Folds are kept across restarts.
 - **Pressing a space row** shows it; dragging it reorders spaces, with an accent line where it lands.
+  Dragged onto another machine's header, a space from this computer moves there when let go: the header is
+  filled with `selected` while it is held over it, and letting go opens the `selan-teleport` dialog
+  ([herdr-teleport](https://github.com/selan-ai/herdr-teleport)) with `{ space, machine }`, 440 by 190. Only
+  when that mod is installed (its `main.js` is in Herdr's home, looked for with the machines every 15 s), and
+  only on a machine that is connected and reached over ssh.
 - **The Reactor panel** reads the questions every 60 s through the Selan CLI, puts their count on the Dock
   badge and raises a toast for each new one. Pressing a question opens a dialog to answer it. With no question
   waiting its island is hidden; a new question or a failed read shows it again.

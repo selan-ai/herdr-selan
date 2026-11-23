@@ -29,6 +29,9 @@ selan reactor questions   # should list your waiting questions
 selan reactor runs        # should list the runs going and the ones that went wrong
 ```
 
+With [herdr-teleport](https://github.com/selan-ai/herdr-teleport) added too, dragging a space onto another
+machine in the sidebar moves it there, its Claude Code session and repository with it.
+
 `ctrl-shift-l` switches back to your previous layout.
 
 ## Save changes
