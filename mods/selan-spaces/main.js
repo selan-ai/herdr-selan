@@ -7,7 +7,7 @@
 
 import { View, div, svg, image } from "gpui-kit";
 import { v_flex, h_flex, ScrollHandle } from "gpui-base";
-import { spaces, machines, panes, terminals, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout, home } from "herdr";
+import { spaces, machines, panes, terminals, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout, appHome, readTextFile } from "herdr";
 
 // Same as the tabs and agents mods: drops a status glyph, keeps a leading bracket or quote.
 const clean = (s) => (s ?? "").replace(/^[^\p{L}\p{N}\p{Ps}\p{Pi}]+/u, "").replace(/^\[ [!.] \] /, "").trim();
@@ -192,7 +192,7 @@ export default class Spaces extends View {
   refreshMachines(cx) {
     cx.spawn(async cx => {
       try { const r = await hc(["machine", "ls", "--json"]); if (r.code === 0) this.machines = (JSON.parse(r.stdout).machines ?? []).filter((m) => !m.temporary); } catch {}
-      try { this.teleport = (await exec("test", ["-f", `${home()}/mods/${TELEPORT}/main.js`])).code === 0; } catch { this.teleport = false; }
+      try { this.teleport = (await readTextFile(`${appHome()}/mods/${TELEPORT}/main.js`)) !== null; } catch { this.teleport = false; }
       cx.notify();
     });
   }
