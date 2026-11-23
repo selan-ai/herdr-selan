@@ -45,6 +45,10 @@ sidebar, the terminals and the Reactor panel are rounded islands on a grey frame
 - **Agent status** on each tab row: working is a spinning ring in `working`; blocked is a "Needs you" pill in
   `blocked` on a 15% tint; done is a `done` dot; idle is a ring in `idle`. The tab's status is its most urgent
   agent's.
+- **A chat's color**: hovering a tab row shows a faint bar left of its icon; pressing it opens a row of
+  swatches under the chat: none, the six avatar colors (teal, orange, blue, violet, green, pink) and muted.
+  A color is a 3 px bar there; muted dims the row's icon and title to `dim`, for a chat to leave be.
+  Colors are kept by tab id across restarts (`chats.colors`).
 - **Pressing a tab row** shows that space and tab. Double-press renames the tab; right-press opens its menu
   (Rename, New tab, Close). Sub-agent rows focus the agent's pane, or peek at it when it has none.
 - **Hovering a space row** shows a + and a chevron. The + opens the new menu for that space: Terminal, then
