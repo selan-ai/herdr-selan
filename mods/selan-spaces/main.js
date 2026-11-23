@@ -575,7 +575,9 @@ export default class Spaces extends View {
       .when(current !== color, (el) => el.hover((st) => st.opacity(0.8)))
       .tooltip(color === null ? "No color" : color === "muted" ? "Muted" : "Color")
       .on_click((_e, cx) => { cx.stop_propagation(); this.setChatColor(c.id, color); cx.notify(); });
+    // Its presses are its own: never a press on the space around it, which would carry the space.
     return h_flex().id(`tab-colors-${c.id}`).pl(TAB_INSET - 2).h(26).flex_none().gap(6).items_center()
+      .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
       .children([null, ...CHAT_COLORS].map(swatch));
   }
 
@@ -635,6 +637,7 @@ export default class Spaces extends View {
     const over = w && source && this.pressedTab === null && (source.machine ?? null) === m ? w.id : null;
     const drop = (source?.machine ?? null) !== m && this.droppable(m) ? m : null;
     if (this.over !== over || this.drop !== drop || !this.dragging) {
+      this.picking = null;
       this.over = over;
       this.drop = drop;
       this.dragging = true;
