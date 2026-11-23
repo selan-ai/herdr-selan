@@ -7,7 +7,7 @@
 
 import { View, div, svg, image } from "gpui-kit";
 import { v_flex, h_flex, ScrollHandle } from "gpui-base";
-import { spaces, machines, panes, terminals, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout, appHome, readTextFile } from "herdr";
+import { spaces, machines, panes, terminals, run, openOverlay, closeOverlay, props, exec, hc, theme, shared, setShared, watchFolder, window, layout, appHome, readTextFile } from "herdr";
 
 // Same as the tabs and agents mods: drops a status glyph, keeps a leading bracket or quote.
 const clean = (s) => (s ?? "").replace(/^[^\p{L}\p{N}\p{Ps}\p{Pi}]+/u, "").replace(/^\[ [!.] \] /, "").trim();
@@ -86,9 +86,59 @@ async function both(a, b) {
 // that draws space avatars): one strong color per hue, light and dark alike.
 const MARK = { ansi6: "#22a99a", ansi3: "#e3814f", ansi4: "#5b8def", ansi5: "#8b7cf6", ansi2: "#3fae6a", ansi1: "#d9649a" };
 
-// A chat's own color, picked on its row: a bar at its left in one of the avatar colors, or muted,
-// which dims the whole row for a chat to leave be. Kept by tab id, in this order on the picker.
+// A chat's own color, picked from its right-press menu: a bar at its left in one of the avatar colors,
+// or muted, which dims the whole row for a chat to leave be. Kept by tab id, in this order in the menu.
 const CHAT_COLORS = ["ansi6", "ansi3", "ansi4", "ansi5", "ansi2", "ansi1", "muted"];
+const CHAT_KEY = "chats.colors";
+const MENU = { width: 228, swatches: 40, item: 28, pad: 4 };
+const MENU_ITEMS = ["Rename", "New tab", "Close"];
+
+// Every chat's color, as the sidebar and its menu share it.
+function chatColors() {
+  const c = shared(CHAT_KEY);
+  return c && typeof c === "object" && !Array.isArray(c) ? c : {};
+}
+
+// A chat's color set (null: none), kept across restarts, among the chats there are now.
+function setChatColor(id, color) {
+  const tabs = new Set(spaces().flatMap((s) => (s.tabs ?? []).map((c) => c.id)));
+  const kept = Object.fromEntries(Object.entries(chatColors()).filter(([k]) => tabs.has(k) && k !== id));
+  if (color) kept[id] = color;
+  setShared(CHAT_KEY, kept);
+  localStorage.setItem(CHAT_KEY, JSON.stringify(kept));
+}
+
+// A chat's right-press menu, opened as a popup at the pointer: its colors, then Rename, New tab, Close.
+class ChatMenu {
+  static open(tab, space) {
+    const height = MENU.pad * 2 + MENU.swatches + 9 + MENU_ITEMS.length * MENU.item;
+    openOverlay({ mod: "selan-spaces", kind: "popup", width: MENU.width, height, props: { chatMenu: { tab, space } } });
+  }
+
+  static render(t, { tab, space }, overlay) {
+    const current = chatColors()[tab] ?? null;
+    const done = () => closeOverlay(overlay);
+    const swatch = (color) => div().id(`color-${color ?? "none"}`).size(18).flex_none().rounded(9).cursor_pointer()
+      .when(color === null, (el) => el.border(1.5).border_color(t.dim))
+      .when(color === "muted", (el) => el.bg(t.dim))
+      .when(color !== null && color !== "muted", (el) => el.bg(MARK[color] ?? t[color]))
+      .when(current === color, (el) => el.border(2).border_color(t.foreground))
+      .when(current !== color, (el) => el.hover((st) => st.opacity(0.75)))
+      .tooltip(color === null ? "No color" : color === "muted" ? "Muted" : "Color")
+      .on_click(() => { setChatColor(tab, color); done(); });
+    const item = (label, action) => h_flex().id(`item-${label}`).h(MENU.item).flex_none().px(10).items_center().rounded(6)
+      .cursor_pointer().text_color(t.foreground).hover((st) => st.bg(t.hover)).on_click(() => { done(); action(); }).child(label);
+    const actions = {
+      "Rename": () => run("tab.rename", { id: tab }),
+      "New tab": () => run("tab.new", { space }),
+      "Close": () => run("tab.close", { id: tab }),
+    };
+    return v_flex().size_full().p(MENU.pad).bg(t.popover ?? t.chrome).text_size(12.5)
+      .child(h_flex().h(MENU.swatches).flex_none().px(6).gap(6).items_center().children([null, ...CHAT_COLORS].map(swatch)))
+      .child(div().h(1).mx(2).my(4).flex_none().bg(t.border))
+      .children(MENU_ITEMS.map((label) => item(label, actions[label])));
+  }
+}
 
 // A space speaks up only when something in it needs you.
 export function glyph(status) {
@@ -101,6 +151,11 @@ export function tone(t, status) {
 
 export default class Spaces extends View {
   init(_props, cx) {
+    const p = props() ?? {};
+    if (p.chatMenu) {
+      this.menu = p;
+      return;
+    }
     this.git = {}; // where() -> { name, branch, ahead, behind, repo, linked }, null: not a repo
     this.checked = {}; // where() -> when it was last looked at
     this.unsure = new Set(); // where()s git couldn't answer for (a machine away)
@@ -130,12 +185,13 @@ export default class Spaces extends View {
     try { this.folded = new Set(JSON.parse(localStorage.getItem("machines.folded") ?? "[]")); } catch { this.folded = new Set(); }
     // Spaces folded to their one row: their tabs hidden, their count and most urgent status on it.
     try { this.foldedSpaces = new Set(JSON.parse(localStorage.getItem("spaces.folded") ?? "[]")); } catch { this.foldedSpaces = new Set(); }
-    try {
-      this.chatColors = JSON.parse(localStorage.getItem("chats.colors") ?? "{}");
-      if (!this.chatColors || typeof this.chatColors !== "object" || Array.isArray(this.chatColors)) this.chatColors = {};
-    } catch { this.chatColors = {}; }
-    this.hoveredTab = null; // the chat row under the pointer: its color handle shows
-    this.picking = null; // the chat whose color picker is open under its row
+    // Chats' colors from before a restart, for the menu and the rows to share.
+    if (!shared(CHAT_KEY)) {
+      try {
+        const kept = JSON.parse(localStorage.getItem(CHAT_KEY) ?? "{}");
+        if (kept && typeof kept === "object" && !Array.isArray(kept)) setShared(CHAT_KEY, kept);
+      } catch {}
+    }
     this.refreshMachines(cx);
     cx.timer.every(15000, cx => this.refreshMachines(cx));
     // Refresh only when the refs could have changed (see `due`).
@@ -515,12 +571,11 @@ export default class Spaces extends View {
     const mine = this.ps.filter((p) => p.tab === c.id && p.terminal);
     const lead = mine.find((p) => p.program?.agent) ?? mine[0];
     const shown = w.active && c.active;
-    const color = this.chatColors[c.id];
+    const color = chatColors()[c.id];
     const muted = color === "muted";
     const text = muted ? t.dim : shown ? t.foreground : t.muted;
     const pic = programIcon(lead?.program, 14, text);
     const stop = (_e, cx) => cx.stop_propagation();
-    const handle = this.hoveredTab === c.id || this.picking === c.id;
     return h_flex()
       .id(`tab-${c.id}`)
       .relative()
@@ -535,10 +590,6 @@ export default class Spaces extends View {
       .when(shown, (el) => el.bg(t.selected))
       .when(!shown, (el) => el.hover((s) => s.bg(t.hover)))
       .when(this.dragging && this.pressedTab === c.id, (el) => el.opacity(0.5))
-      .on_hover((hovered, cx) => {
-        const next = hovered ? c.id : this.hoveredTab === c.id ? null : this.hoveredTab;
-        if (next !== this.hoveredTab) { this.hoveredTab = next; cx.notify(); }
-      })
       // A chat is carried on its own: never among its space's neighbours, only onto another machine.
       .on_mouse_down("left", (e, cx) => {
         cx.stop_propagation();
@@ -550,44 +601,12 @@ export default class Spaces extends View {
         if (!w.active) run("space.select", { id: w.id });
         run("tab.select", { id: c.id });
       })
-      .on_mouse_down("right", (_e, cx) => { cx.stop_propagation(); openOverlay({ mod: "menu", kind: "popup", width: 200, props: { tab: "tab", target: { id: c.id, space: w.id } } }); })
-      // The color: a bar left of the icon; hovered without one, a faint bar that opens the picker.
-      .child(div().id(`tab-color-${c.id}`).absolute().left(TAB_INSET - 14).top(0).bottom(0).w(10).flex().items_center().justify_center()
-        .when(handle || (color && !muted), (el) => el.cursor_pointer())
-        .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
-        .on_click((_e, cx) => { cx.stop_propagation(); this.picking = this.picking === c.id ? null : c.id; cx.notify(); })
-        .child(div().w(3).h(14).rounded(2)
-          .when(Boolean(color) && !muted, (el) => el.bg(MARK[color] ?? t[color]))
-          .when((!color || muted) && handle, (el) => el.bg(t.dim + "66").hover((st) => st.bg(t.dim)))))
+      .on_mouse_down("right", (_e, cx) => { cx.stop_propagation(); ChatMenu.open(c.id, w.id); })
+      // The color: a bar left of the icon.
+      .when(Boolean(color) && !muted, (el) => el.child(div().absolute().left(TAB_INSET - 10).top(7).w(3).h(14).rounded(2).bg(MARK[color] ?? t[color])))
       .child(pic ?? div().size(14).flex_none())
       .child(div().flex_1().min_w(0).truncate().text_color(text).child(c.zoomed ? `${tabLabel(c, lead)} Z` : tabLabel(c, lead)))
       .child(this.status(t, c.status) ?? div());
-  }
-
-  // The colors a chat can take, in a row under it: none, the six avatar colors, muted.
-  colorPicker(c, t) {
-    const current = this.chatColors[c.id] ?? null;
-    const swatch = (color) => div().id(`tab-color-${c.id}-${color ?? "none"}`).size(16).flex_none().rounded(8).cursor_pointer()
-      .when(color === null, (el) => el.border(1.5).border_color(t.dim))
-      .when(color === "muted", (el) => el.bg(t.dim))
-      .when(color !== null && color !== "muted", (el) => el.bg(MARK[color] ?? t[color]))
-      .when(current === color, (el) => el.border(2).border_color(t.foreground))
-      .when(current !== color, (el) => el.hover((st) => st.opacity(0.8)))
-      .tooltip(color === null ? "No color" : color === "muted" ? "Muted" : "Color")
-      .on_click((_e, cx) => { cx.stop_propagation(); this.setChatColor(c.id, color); cx.notify(); });
-    // Its presses are its own: never a press on the space around it, which would carry the space.
-    return h_flex().id(`tab-colors-${c.id}`).pl(TAB_INSET - 2).h(26).flex_none().gap(6).items_center()
-      .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
-      .children([null, ...CHAT_COLORS].map(swatch));
-  }
-
-  setChatColor(id, color) {
-    const tabs = new Set(spaces().flatMap((s) => (s.tabs ?? []).map((c) => c.id)));
-    const kept = Object.fromEntries(Object.entries(this.chatColors).filter(([k]) => tabs.has(k) && k !== id));
-    if (color) kept[id] = color;
-    this.chatColors = kept;
-    this.picking = null;
-    localStorage.setItem("chats.colors", JSON.stringify(kept));
   }
 
   subRow(s, t) {
@@ -616,7 +635,7 @@ export default class Spaces extends View {
   tabRows(w, t) {
     return (w.tabs ?? []).flatMap((c) => {
       const leads = this.ps.filter((p) => p.tab === c.id && p.terminal && p.program?.agent);
-      return [this.tabRow(w, c, t), ...(this.picking === c.id ? [this.colorPicker(c, t)] : []), ...leads.flatMap((p) => this.kids(p.terminal)).map((s) => this.subRow(s, t))];
+      return [this.tabRow(w, c, t), ...leads.flatMap((p) => this.kids(p.terminal)).map((s) => this.subRow(s, t))];
     });
   }
 
@@ -637,7 +656,6 @@ export default class Spaces extends View {
     const over = w && source && this.pressedTab === null && (source.machine ?? null) === m ? w.id : null;
     const drop = (source?.machine ?? null) !== m && this.droppable(m) ? m : null;
     if (this.over !== over || this.drop !== drop || !this.dragging) {
-      this.picking = null;
       this.over = over;
       this.drop = drop;
       this.dragging = true;
@@ -759,6 +777,7 @@ export default class Spaces extends View {
 
   render() {
     const t = theme();
+    if (this.menu) return ChatMenu.render(t, this.menu.chatMenu, this.menu.overlay);
     const collapsed = narrow();
     const palette = ["ansi6", "ansi3", "ansi4", "ansi5", "ansi2", "ansi1"];
     const sp = spaces();
